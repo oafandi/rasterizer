@@ -1,0 +1,28 @@
+stages of forward rendering pipeline:
+
+1. vertex processing []
+    - modeling transformations
+    - camera transformations
+    - projection transformations
+
+    for modeling transformations, we don't create new vertices, we change the initial ones
+    then we copy all vertices for each camera, so that we can apply camera transformation
+
+2. primitive assembly
+
+
+3. clipping and culling
+
+4. viewport transform
+
+5. rasterization [mapping primitives in screen space to respective pixels]:
+
+6. fragment processing
+
+
+what is different for wireframe and solid modes?
+
+
+
+TODO:
+- implement rotation matrix
