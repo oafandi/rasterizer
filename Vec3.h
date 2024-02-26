@@ -15,6 +15,8 @@ public:
 
     float getNthComponent(int n);
     float dot(const Vec3 &other);
+    void normalize();
+    Vec3 cross(const Vec3 &other);
 
     friend std::ostream &operator<<(std::ostream &os, const Vec3 &v);
 };

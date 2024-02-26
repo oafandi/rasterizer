@@ -2,6 +2,8 @@
 #define __VEC4_H__
 #define NO_COLOR -1
 
+#include <ostream>
+
 class Vec4
 {
 public:

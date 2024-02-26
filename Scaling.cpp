@@ -1,11 +1,10 @@
 #include <iomanip>
 #include "Scaling.h"
 
+
 Scaling::Scaling() {
     this->scalingId = -1;
-    this->sx = 0;
-    this->sy = 0;
-    this->sz = 0;
+    memset(matrix.values, 0, sizeof(float)*16);
 }
 
 Scaling::Scaling(int scalingId, double sx, double sy, double sz)
@@ -31,7 +30,7 @@ Scaling::Scaling(int scalingId, double sx, double sy, double sz)
 
 std::ostream &operator<<(std::ostream &os, const Scaling &s)
 {
-    os << std::fixed << std::setprecision(3) << "Scaling " << s.scalingId << " => [" << s.sx << ", " << s.sy << ", " << s.sz << "]";
+    // os << std::fixed << std::setprecision(3) << "Scaling " << s.scalingId << " => [" << s.sx << ", " << s.sy << ", " << s.sz << "]";
 
     return os;
 }

@@ -1,6 +1,8 @@
 #ifndef __TRANSLATION_H__
 #define __TRANSLATION_H__
 
+#include "Matrix4.h"
+
 class Translation
 {
 public:

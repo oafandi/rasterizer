@@ -1,6 +1,8 @@
 #ifndef __SCALING_H__
 #define __SCALING_H__
 
+#include "Matrix4.h"
+
 class Scaling
 {
 public:

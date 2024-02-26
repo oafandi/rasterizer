@@ -1,6 +1,10 @@
 #include <vector>
 #include <iomanip>
+#include <algorithm>
+#include <vector>
+#include <iostream>
 #include "Mesh.h"
+#include "Color.h"
 
 Mesh::Mesh() {}
 
@@ -17,8 +21,42 @@ Mesh::Mesh(int meshId, int type, int numberOfTransformations,
     this->transformationIds = transformationIds;
     this->transformationTypes = transformationTypes;
     this->triangles = triangles;
+
+    float modelingValues [4][4] = {
+        {1, 0, 0, 0},
+        {0, 1, 0, 0},
+        {0, 0 ,1, 0},
+        {0, 0, 0, 1}
+    };
+    this->modelingTransformationMatrix = Matrix4(modelingValues);
 }
 
+void Mesh::setFaces(std::vector<Vec4> &vertices, std::vector<Color *> colorsOfVertices)
+{
+    for (int i = 0; i < this->triangles.size(); i++)
+    {
+        Face face = Face(vertices[this->triangles[i].vertexIds[0] - 1],
+                         vertices[this->triangles[i].vertexIds[1] - 1],
+                         vertices[this->triangles[i].vertexIds[2] - 1],
+                         *colorsOfVertices[this->triangles[i].vertexIds[0]-1],
+                         *colorsOfVertices[this->triangles[i].vertexIds[1]-1],
+                         *colorsOfVertices[this->triangles[i].vertexIds[2]-1]);
+        this->faces.push_back(face);
+        // std::cout << "Faces before transformations: \n";
+        // std::cout << "{" << face.vertices[0] << ", " << face.vertices[1] << ", " << face.vertices[2] << "}" << std::endl;
+    }
+}
+
+void Mesh::setVertices(std::vector<Vec4> &vertices)
+{  /*
+    for (int i = 0; i < triangles.size(); i++)
+    {
+        if (find(vertices.begin(), vertices.end(), vertices[triangles[i].vertexIds[0] - 1]) == this->vertices.end()) this->vertices.push_back(vertices[triangles[i].vertexIds[0] - 1]);
+        if (find(vertices.begin(), vertices.end(), vertices[triangles[i].vertexIds[1] - 1]) == this->vertices.end()) this->vertices.push_back(vertices[triangles[i].vertexIds[1] - 1]);
+        if (find(vertices.begin(), vertices.end(), vertices[triangles[i].vertexIds[2] - 1]) == this->vertices.end()) this->vertices.push_back(vertices[triangles[i].vertexIds[2] - 1]);
+    }
+    */
+}
 
 std::ostream &operator<<(std::ostream &os, const Mesh &m)
 {

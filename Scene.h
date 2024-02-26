@@ -12,30 +12,31 @@
 class Scene
 {
 public:
-	Color backgroundColor;
-	bool cullingEnabled;
 
-	std::vector<std::vector<Color> > image; // which camera's image?
-	std::vector<std::vector<double> > depth;
 	std::vector<Camera *> cameras;
+
 	std::vector<Vec3 *> vertices;
 	std::vector<Color *> colorsOfVertices;
+	
+	// Transformations
 	std::vector<Scaling *> scalings;
 	std::vector<Rotation *> rotations;
 	std::vector<Translation *> translations;
+
 	std::vector<Mesh *> meshes;
 	std::vector<Vec4> homogeneousVertices;
+
+	Color backgroundColor;
+	bool cullingEnabled;
 
 	Scene(const char *xmlPath);
 
 	void setHomogeneousVertices();
-	void assignColorToPixel(int i, int j, Color c);
-	void initializeImage(Camera *camera);
-	int makeBetweenZeroAnd255(float value);
-	void writeImageToPPMFile(Camera *camera);
-	void convertPPMToPNG(std::string ppmFileName);
 	void forwardRenderingPipeline(Camera *camera);
 	void render();
+
+
+
 private:
 	void applyModelingTransformations();
 };

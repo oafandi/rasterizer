@@ -26,18 +26,33 @@ Matrix4::Matrix4(float values[4][4])
 
 Matrix4::Matrix4(const Matrix4 &other)
 {
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i ++)
     {
-        for (int j = 0; j < 4; j++)
+        for (int j = 0; j < 4; j ++)
         {
             this->values[i][j] = other.values[i][j];
         }
     }
 }
-
-Vec4 Matrix4::operator*(const Vec4 &v) const
+Matrix4 Matrix4::operator=(const Matrix4 &other)
 {
-    float values[4];
+    if (this != &other)
+    {
+        for (int i = 0; i < 4; i ++)
+        {
+            for (int j = 0; j < 4; j ++)
+            {
+                this->values[i][j] = other.values[i][j];
+            }
+        }
+    }
+
+    return *this;
+}
+
+Vec4 Matrix4::operator*(Vec4 &v) const
+{
+    float res[4];
     float total;
 
     for (int i = 0; i < 4; i++)
@@ -48,10 +63,32 @@ Vec4 Matrix4::operator*(const Vec4 &v) const
             total += this->values[i][j] * v.getNthComponent(j);
         }
 
-        values[i] = total;
+        res[i] = total;
     }
 
-    return Vec4(values[0], values[1], values[2], values[3]);
+    return Vec4(res[0], res[1], res[2], res[3]);
+}
+
+Matrix4 Matrix4::operator*(const Matrix4 &other) const
+{
+    Matrix4 result;
+    float total;
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            total = 0;
+            for (int k = 0; k < 4; k++)
+            {
+                total += this->values[i][k] * other.values[k][j];
+            }
+
+            result.values[i][j] = total;
+        }
+    }
+
+    return result;
 }
 
 std::ostream &operator<<(std::ostream &os, const Matrix4 &m)

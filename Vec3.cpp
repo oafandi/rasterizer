@@ -1,5 +1,6 @@
 #include <iomanip>
 #include "Vec3.h"
+#include <cmath>
 
 Vec3::Vec3()
 {
@@ -52,6 +53,22 @@ float Vec3::getNthComponent(int n)
 float Vec3::dot(const Vec3 &other)
 {
     return this->x * other.x + this->y * other.y + this->z * other.z;
+}
+
+void Vec3::normalize()
+{
+    float norm = sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
+    this->x /= norm;
+    this->y /= norm;
+    this->z /= norm;
+}
+
+Vec3 Vec3::cross(const Vec3 &other)
+{
+    float x = this->y * other.z - this->z * other.y;
+    float y = this->z * other.x - this->x * other.z;
+    float z = this->x * other.y - this->y * other.x;
+    return Vec3(x, y, z);
 }
 
 std::ostream &operator<<(std::ostream &os, const Vec3 &v)

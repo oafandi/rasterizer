@@ -6,11 +6,15 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <iostream>
 
 #include "tinyxml2.h"
 #include "Triangle.h"
 #include "Helpers.h"
 #include "Scene.h"
+
+#include <set>
+#include <unordered_set>
 
 using namespace tinyxml2;
 using namespace std;
@@ -41,11 +45,13 @@ Scene::Scene(const char *xmlPath)
 
 		if (strcmp(str, "enabled") == 0)
 		{
-			this->cullingEnabled = true;
+			this->cullingEnabled = true; 
+			// TODO Pay attention manage
 		}
 		else
 		{
 			this->cullingEnabled = false;
+			// TODO Pay attention manage
 		}
 	}
 
@@ -73,15 +79,15 @@ Scene::Scene(const char *xmlPath)
 
 		camFieldElement = camElement->FirstChildElement("Position");
 		str = camFieldElement->GetText();
-		sscanf(str, "%lf %lf %lf", &camera->position.x, &camera->position.y, &camera->position.z);
+		sscanf(str, "%f %f %f", &camera->position.x, &camera->position.y, &camera->position.z);
 
 		camFieldElement = camElement->FirstChildElement("Gaze");
 		str = camFieldElement->GetText();
-		sscanf(str, "%lf %lf %lf", &camera->gaze.x, &camera->gaze.y, &camera->gaze.z);
+		sscanf(str, "%f %f %f", &camera->gaze.x, &camera->gaze.y, &camera->gaze.z);
 
 		camFieldElement = camElement->FirstChildElement("Up");
 		str = camFieldElement->GetText();
-		sscanf(str, "%lf %lf %lf", &camera->v.x, &camera->v.y, &camera->v.z);
+		sscanf(str, "%f %f %f", &camera->v.x, &camera->v.y, &camera->v.z);
 
 		camera->gaze = normalizeVec3(camera->gaze);
 		camera->u = crossProductVec3(camera->gaze, camera->v);
@@ -101,6 +107,25 @@ Scene::Scene(const char *xmlPath)
 		str = camFieldElement->GetText();
 		camera->outputFilename = string(str);
 
+		camera->backgroundColor = backgroundColor;
+		camera->cullingEnabled = cullingEnabled;
+
+
+		// cout << "Camera output debug:\n";
+		// cout << camera->projectionType << endl;
+		// cout << camera->position << endl;
+		// cout << camera->gaze << endl;
+		// cout << camera->v << endl;
+		// cout << camera->w << endl;
+		// cout << camera->u << endl;
+		// cout << camera->left << endl;
+		// cout << camera->right << endl;
+		// cout << camera->near << endl;
+		// cout << camera->far << endl;
+		// cout << camera->outputFilename << endl;
+		// cout << camera->backgroundColor << endl;
+		// cout << camera->cullingEnabled << endl;
+
 		this->cameras.push_back(camera);
 
 		camElement = camElement->NextSiblingElement("Camera");
@@ -119,7 +144,7 @@ Scene::Scene(const char *xmlPath)
 		vertex->colorId = vertexId;
 
 		str = vertexElement->Attribute("position");
-		sscanf(str, "%lf %lf %lf", &vertex->x, &vertex->y, &vertex->z);
+		sscanf(str, "%f %f %f", &vertex->x, &vertex->y, &vertex->z);
 
 		str = vertexElement->Attribute("color");
 		sscanf(str, "%lf %lf %lf", &color->r, &color->g, &color->b);
@@ -141,7 +166,7 @@ Scene::Scene(const char *xmlPath)
 		translationElement->QueryIntAttribute("id", &id);
 
 		str = translationElement->Attribute("value");
-		float tx, ty, tz;
+		double tx, ty, tz;
 		sscanf(str, "%lf %lf %lf", &tx, &ty, &tz);
 		Translation *translation = new Translation(id, tx, ty, tz);
 
@@ -158,7 +183,7 @@ Scene::Scene(const char *xmlPath)
 		int id;
 		scalingElement->QueryIntAttribute("id", &id);
 		str = scalingElement->Attribute("value");
-		float sx, sy, sz;
+		double sx, sy, sz;
 		sscanf(str, "%lf %lf %lf", &sx, &sy, &sz);
 
 		Scaling *scaling = new Scaling(id, sx, sy, sz);
@@ -176,7 +201,7 @@ Scene::Scene(const char *xmlPath)
 		int id;
 		rotationElement->QueryIntAttribute("id", &id);
 		str = rotationElement->Attribute("value");
-		float angle, ux, uy, uz;
+		double angle, ux, uy, uz;
 		sscanf(str, "%lf %lf %lf %lf", &angle, &ux, &uy, &uz);
 		Rotation *rotation = new Rotation(id, angle, ux, uy, uz);
 		this->rotations.push_back(rotation);
@@ -252,104 +277,9 @@ Scene::Scene(const char *xmlPath)
 	}
 }
 
-void Scene::assignColorToPixel(int i, int j, Color c)
-{
-	this->image[i][j].r = c.r;
-	this->image[i][j].g = c.g;
-	this->image[i][j].b = c.b;
-}
-
-/*
-	Initializes image with background color
-*/
-void Scene::initializeImage(Camera *camera)
-{
-	if (this->image.empty())
-	{
-		for (int i = 0; i < camera->horRes; i++)
-		{
-			vector<Color> rowOfColors;
-			vector<double> rowOfDepths;
-
-			for (int j = 0; j < camera->verRes; j++)
-			{
-				rowOfColors.push_back(this->backgroundColor);
-				rowOfDepths.push_back(1.01);
-			}
-
-			this->image.push_back(rowOfColors);
-			this->depth.push_back(rowOfDepths);
-		}
-	}
-	else
-	{
-		for (int i = 0; i < camera->horRes; i++)
-		{
-			for (int j = 0; j < camera->verRes; j++)
-			{
-				assignColorToPixel(i, j, this->backgroundColor);
-				this->depth[i][j] = 1.01;
-				this->depth[i][j] = 1.01;
-				this->depth[i][j] = 1.01;
-			}
-		}
-	}
-}
-
-/*
-	If given value is less than 0, converts value to 0.
-	If given value is more than 255, converts value to 255.
-	Otherwise returns value itself.
-*/
-int Scene::makeBetweenZeroAnd255(float value)
-{
-	if (value >= 255.0)
-		return 255;
-	if (value <= 0.0)
-		return 0;
-	return (int)(value);
-}
-
-/*
-	Writes contents of image (Color**) into a PPM file.
-*/
-void Scene::writeImageToPPMFile(Camera *camera)
-{
-	ofstream fout;
-
-	fout.open(camera->outputFilename.c_str());
-
-	fout << "P3" << endl;
-	fout << "# " << camera->outputFilename << endl;
-	fout << camera->horRes << " " << camera->verRes << endl;
-	fout << "255" << endl;
-
-	for (int j = camera->verRes - 1; j >= 0; j--)
-	{
-		for (int i = 0; i < camera->horRes; i++)
-		{
-			fout << makeBetweenZeroAnd255(this->image[i][j].r) << " "
-				 << makeBetweenZeroAnd255(this->image[i][j].g) << " "
-				 << makeBetweenZeroAnd255(this->image[i][j].b) << " ";
-		}
-		fout << endl;
-	}
-	fout.close();
-}
-
-/*
-	Converts PPM image in given path to PNG file, by calling ImageMagick's 'convert' command.
-*/
-void Scene::convertPPMToPNG(string ppmFileName)
-{
-	string command;
-
-	// TODO: Change implementation if necessary.
-	command = "./magick convert " + ppmFileName + " " + ppmFileName + ".png";
-	system(command.c_str());
-}
 
 void Scene::setHomogeneousVertices() {
+	// std::cout << "Homogeneous Vertices Before Modeling Transformations: " << std::endl;
 	for (int i = 0; i < this->vertices.size(); i ++) {
 		this->homogeneousVertices.push_back(Vec4(this->vertices[i]->x, this->vertices[i]->y, this->vertices[i]->z, 1));
 	}
@@ -357,36 +287,82 @@ void Scene::setHomogeneousVertices() {
 
 void Scene::applyModelingTransformations() {
 	for (int i = 0; i < meshes.size(); i ++) {
+		float identity[4][4] = {
+			{1, 0, 0, 0},
+			{0, 1, 0, 0}, 
+			{0, 0, 1, 0}, 
+			{0, 0, 0, 1}
+		};
+		Matrix4 identityMatrix(identity);
+		meshes[i]->modelingTransformationMatrix = identityMatrix;
+		meshes[i]->setFaces(homogeneousVertices, colorsOfVertices);
 		for (int j = 0; j < meshes[i]->numberOfTransformations; j ++) {
 			if (meshes[i]->transformationTypes[j] == 't') {
-				meshes[i]->applyTransformation(this->translations[meshes[i]->transformationIds[j]]->matrix);
-			} else if (meshes[i]->transformationTypes[j] == 's') {
-				meshes[i]->applyTransformation(this->scalings[meshes[i]->transformationIds[j]]->matrix);
-			} else if (meshes[i]->transformationTypes[j] == 'r') {
-				meshes[i]->applyTransformation(this->rotations[meshes[i]->transformationIds[j]]->matrix);
-			}
+				if (!j) meshes[i]->modelingTransformationMatrix = this->translations[meshes[i]->transformationIds[j]-1]->matrix;
+				else meshes[i]->modelingTransformationMatrix = this->translations[meshes[i]->transformationIds[j]-1]->matrix * meshes[i]->modelingTransformationMatrix;
+			} 
+			else if (meshes[i]->transformationTypes[j] == 's') {
+			 	if (!j) meshes[i]->modelingTransformationMatrix = this->scalings[meshes[i]->transformationIds[j]-1]->matrix;
+			 	else meshes[i]->modelingTransformationMatrix = this->scalings[meshes[i]->transformationIds[j]-1]->matrix * meshes[i]->modelingTransformationMatrix;
+			} 
+			else
+			if (meshes[i]->transformationTypes[j] == 'r') {
+				if (!j) meshes[i]->modelingTransformationMatrix = this->rotations[meshes[i]->transformationIds[j]-1]->matrix;
+				else meshes[i]->modelingTransformationMatrix = this->rotations[meshes[i]->transformationIds[j]-1]->matrix * meshes[i]->modelingTransformationMatrix;
+			} 
+		}
+		// TODO: Check edge case when vertices can be shared across different meshes.
+		for (int j = 0; j < meshes[i]->numberOfTriangles; j ++) {
+			/*if (i == 2) {
+				std::cout << "BEFORE Vertex 1: " << meshes[i]->faces[j].vertices[0] << std::endl;
+				std::cout << "BEFORE Vertex 2: " << meshes[i]->faces[j].vertices[1] << std::endl;
+				std::cout << "BEFORE Vertex 3: " << meshes[i]->faces[j].vertices[2] << std::endl << std::endl;
+			}*/
+			meshes[i]->faces[j].vertices[0] = meshes[i]->modelingTransformationMatrix * meshes[i]->faces[j].vertices[0];
+			meshes[i]->faces[j].vertices[1] = meshes[i]->modelingTransformationMatrix * meshes[i]->faces[j].vertices[1];
+			meshes[i]->faces[j].vertices[2] = meshes[i]->modelingTransformationMatrix * meshes[i]->faces[j].vertices[2];
+			/*if (i == 2) {
+				std::cout << "AFTER Vertex 1: " << meshes[i]->faces[j].vertices[0] << std::endl;
+				std::cout << "AFTER Vertex 2: " << meshes[i]->faces[j].vertices[1] << std::endl;
+				std::cout << "AFTER Vertex 3: " << meshes[i]->faces[j].vertices[2] << std::endl << std::endl;
+			}*/
 		}
 	}
 }
+/*
+A=(-2.121320,2.200000,-13.717871)
+C=(-9.475230,2.200000,-6.363961)
+E=(-2.121320,2.200000,0.989949)
+F=(5.232590,2.200000,-6.363961)
+G=(-2.121320,-8.200000,-13.717871)
+H=(-9.475230,-8.200000,-6.363961)
+X=(-2.121320,-8.200000,0.989949)
+Y=(5.232590,-8.200000,-6.363961)
+Gaze1=(0,5,0)
+Gaze2=(0.3,4.1,3.5)
+*/
 
 /*
 	Transformations, clipping, culling, rasterization are done here.
 */
 void Scene::forwardRenderingPipeline(Camera *camera)
 {
-	
+	camera->initializeImage();
+	camera->render();
 }
 
 void Scene::render() {
 	setHomogeneousVertices();
 	applyModelingTransformations();
 	for (int i = 0; i < this->cameras.size(); i ++) {
-		this->cameras[i]->setVertices(this->homogeneousVertices);
+		this->cameras[i]->setMeshes(meshes);
 		this->cameras[i]->applyCameraTransformation();
-		initializeImage(this->cameras[i]);
-		//forwardRenderingPipeline(this->cameras[i]);
-		this->cameras[i]->render();
-		writeImageToPPMFile(this->cameras[i]);
-		convertPPMToPNG(this->cameras[i]->outputFilename);
+		this->cameras[i]->applyProjectionTransformation();
+		this->cameras[i]->backfaceCulling();
+		this->cameras[i]->applyViewportTransformation();
+		this->cameras[i]->primitiveAssembly(cullingEnabled);
+		forwardRenderingPipeline(this->cameras[i]);
+		this->cameras[i]->writeImageToPPMFile();
+		// convertPPMToPNG(this->cameras[i]->outputFilename);
 	}
 }
